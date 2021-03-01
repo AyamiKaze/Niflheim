@@ -1,11 +1,7 @@
 /*
-ç”¨äºè§£åŒ…BHçš„pacæ–‡ä»¶
+ÓÃÓÚ½â°üBHµÄpacÎÄ¼ş
 made by Darkness-TX
 2016.12.01
-
-æ·»åŠ æ–°ç‰ˆNeXASæ”¯æŒ
-upload by AyamiKaze
-2020.03.18
 */
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
@@ -25,21 +21,21 @@ typedef unsigned char  unit8;
 typedef unsigned short unit16;
 typedef unsigned int   unit32;
 
-unit32 FileNum = 0;//æ€»æ–‡ä»¶æ•°ï¼Œåˆå§‹è®¡æ•°ä¸º0
+unit32 FileNum = 0;//×ÜÎÄ¼şÊı£¬³õÊ¼¼ÆÊıÎª0
 
 struct header
 {
 	unit8 magic[4];//PAC\x7F
-	unit32 num;//æ–‡ä»¶æ•°
+	unit32 num;//ÎÄ¼şÊı
 	unit32 mode;//7
 }pac_header;
 
 struct index
 {
-	unit8 name[64];//æ–‡ä»¶å
-	unit32 Offset;//æ–‡ä»¶åç§»
-	unit32 FileSize;//è§£å‹å¤§å°
-	unit32 ComSize;//æœªè§£å‹å¤§å°
+	unit8 name[64];//ÎÄ¼şÃû
+	unit32 Offset;//ÎÄ¼şÆ«ÒÆ
+	unit32 FileSize;//½âÑ¹´óĞ¡
+	unit32 ComSize;//Î´½âÑ¹´óĞ¡
 }Index[7000];
 
 void ReadIndex(char *fname)
@@ -50,9 +46,9 @@ void ReadIndex(char *fname)
 	src = fopen(fname, "rb");
 	sprintf(dstname, "%s_INDEX", fname);
 	fread(pac_header.magic, 4, 1, src);
-	if (strncmp(pac_header.magic, "PAC\x7F", 4) != 0)
+	if (strncmp(pac_header.magic, "PAC\x00", 4) != 0)
 	{
-		printf("æ–‡ä»¶å¤´ä¸æ˜¯PAC\\x7F!\nè¦ç»§ç»­è§£åŒ…è¯·æŒ‰ä»»æ„é”®ï¼Œä¸è§£åŒ…è¯·å…³é—­ç¨‹åºã€‚\n");
+		printf("ÎÄ¼şÍ·²»ÊÇPAC\\x00\nÒª¼ÌĞø½â°üÇë°´ÈÎÒâ¼ü£¬²»½â°üÇë¹Ø±Õ³ÌĞò¡£\n");
 		system("pause");
 	}
 	fread(&pac_header.num, 4, 1, src);
@@ -60,7 +56,7 @@ void ReadIndex(char *fname)
 	printf("%s filenum:%d mode:%d\n\n", fname, pac_header.num, pac_header.mode);
 	if (pac_header.mode != 7)
 	{
-		printf("ä¸æ˜¯æ¨¡å¼7ï¼\n");
+		printf("²»ÊÇÄ£Ê½7£¡\n");
 		system("pause");
 		exit(0);
 	}
@@ -107,17 +103,31 @@ void UnpackFile(char *fname)
 		fread(cdata, Index[i].ComSize, 1, src);
 		if (Index[i].ComSize != Index[i].FileSize)
 		{
-			ZSTD_decompress(udata, Index[i].FileSize, cdata, Index[i].ComSize);
-			fwrite(udata, Index[i].FileSize, 1, dst);
-			wprintf(L"%ls offset:0x%X filesize:0x%X comsize:0x%X\n", dstname, Index[i].Offset, Index[i].FileSize, Index[i].ComSize);
-			free(udata);
+			size_t ret_size = ZSTD_decompress(udata, Index[i].FileSize, cdata, Index[i].ComSize);
+			if (ZSTD_isError(ret_size) == ZSTD_error_no_error)
+			{
+				fwrite(udata, Index[i].FileSize, 1, dst);
+				wprintf(L"%ls offset:0x%X filesize:0x%X comsize:0x%X\n", dstname, Index[i].Offset, Index[i].FileSize, Index[i].ComSize);
+			}
+			else
+			{
+				MessageBox(0, L"ZSTD decompress error", L"Decompress", 0);
+				free(cdata);
+				free(udata);
+				fclose(dst);
+				fclose(src);
+				wprintf(L"ZSTD compress error code: %d\n", ZSTD_isError(ret_size));
+				system("pause");
+				exit(-1);
+			}
 		}
 		else
 		{
 			fwrite(cdata, Index[i].FileSize, 1, dst);
 			wprintf(L"%ls offset:0x%X filesize:0x%X\n", dstname, Index[i].Offset, Index[i].FileSize);
-			free(cdata);
 		}
+		free(udata);
+		free(cdata);
 		fclose(dst);
 		FileNum += 1;
 	}
@@ -128,10 +138,10 @@ int main(int argc, char *argv[])
 {
 	char* InputFileName = argv[1];
 	setlocale(LC_ALL, "chs");
-	printf("projectï¼šNiflheim-BALDR HEART\nç”¨äºè§£åŒ…BHçš„pacæ–‡ä»¶ã€‚\nå°†pacæ–‡ä»¶æ‹–åˆ°ç¨‹åºä¸Šã€‚\nby Darkness-TX 2016.12.01\n\næ·»åŠ æ–°ç‰ˆNeXASå°åŒ…æ”¯æŒ\nby AyamiKaze 2020.03.18\n\n\n");
+	printf("project£ºNiflheim-BALDR HEART\nÓÃÓÚ½â°üBHµÄpacÎÄ¼ş¡£\n½«pacÎÄ¼şÍÏµ½³ÌĞòÉÏ¡£\nby Darkness-TX 2016.12.01\n\nÌí¼ÓĞÂ°æNeXAS·â°üÖ§³Ö\nby AyamiKaze 2021.03.01\n\n");
 	ReadIndex(InputFileName);
 	UnpackFile(InputFileName);
-	printf("å·²å®Œæˆï¼Œæ€»æ–‡ä»¶æ•°%d\n", FileNum);
+	printf("ÒÑÍê³É£¬×ÜÎÄ¼şÊı%d\n", FileNum);
 	system("pause");
 	return 0;
 }
